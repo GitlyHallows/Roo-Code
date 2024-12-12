@@ -8,6 +8,7 @@ export type ApiProvider =
 	| "lmstudio"
 	| "gemini"
 	| "openai-native"
+	| "cerebras"
 
 export interface ApiHandlerOptions {
 	apiModelId?: string
@@ -34,6 +35,9 @@ export interface ApiHandlerOptions {
 	openAiNativeApiKey?: string
 	azureApiVersion?: string
 	openRouterUseMiddleOutTransform?: boolean
+	cerebrasApiKey?: string
+	cerebrasModelId?: string
+	cerebrasModelInfo?: ModelInfo
 }
 
 export type ApiConfiguration = ApiHandlerOptions & {
@@ -340,3 +344,36 @@ export const openAiNativeModels = {
 // https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation
 // https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#api-specs
 export const azureOpenAiDefaultApiVersion = "2024-08-01-preview"
+
+// Add Cerebras models configuration
+export type CerebrasModelId = keyof typeof cerebrasModels
+export const cerebrasDefaultModelId: CerebrasModelId = "llama-3.3-70b" // Updated default to latest model
+export const cerebrasModels = {
+    "llama-3.3-70b": {
+        maxTokens: 4096,
+        contextWindow: 8192,
+        supportsImages: false,
+        supportsPromptCache: true,
+        inputPrice: 0.0001,
+        outputPrice: 0.0002,
+        description: "Llama 3.3 70B model from Cerebras - Latest version with improved performance"
+    },
+    "llama3.1-70b": {
+        maxTokens: 4096,
+        contextWindow: 8192,
+        supportsImages: false,
+        supportsPromptCache: true,
+        inputPrice: 0.0001,
+        outputPrice: 0.0002,
+        description: "Llama 3.1 70B model from Cerebras"
+    },
+    "llama3.1-8b": {
+        maxTokens: 4096,
+        contextWindow: 8192,
+        supportsImages: false,
+        supportsPromptCache: true,
+        inputPrice: 0.00005,
+        outputPrice: 0.0001,
+        description: "Llama 3.1 8B model from Cerebras"
+    }
+} as const satisfies Record<string, ModelInfo>

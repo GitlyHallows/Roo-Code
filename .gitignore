@@ -12,3 +12,5 @@ roo-cline-*.vsix
 # Local prompts
 prompts
 .clinerules
+
+exponent.txt
