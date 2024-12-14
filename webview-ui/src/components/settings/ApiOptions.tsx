@@ -26,6 +26,9 @@ import {
 	openRouterDefaultModelInfo,
 	vertexDefaultModelId,
 	vertexModels,
+	cerebrasDefaultModelId,
+	cerebrasModels,
+	CerebrasModelId,
 } from "../../../../src/shared/api"
 import { ExtensionMessage } from "../../../../src/shared/ExtensionMessage"
 import { useExtensionState } from "../../context/ExtensionStateContext"
@@ -50,13 +53,23 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage }: 
 	const [azureApiVersionSelected, setAzureApiVersionSelected] = useState(!!apiConfiguration?.azureApiVersion)
 	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 
-	const handleInputChange = (field: keyof ApiConfiguration) => (event: any) => {
-		setApiConfiguration({ ...apiConfiguration, [field]: event.target.value })
-	}
-
 	const { selectedProvider, selectedModelId, selectedModelInfo } = useMemo(() => {
 		return normalizeApiConfiguration(apiConfiguration)
 	}, [apiConfiguration])
+
+	// Add effect to set default model when provider changes 
+	useEffect(() => {
+		if (selectedProvider === "cerebras" && !apiConfiguration?.cerebrasModelId) {
+			setApiConfiguration({
+				...apiConfiguration,
+				cerebrasModelId: cerebrasDefaultModelId
+			});
+		}
+	}, [selectedProvider, apiConfiguration, setApiConfiguration]);
+
+	const handleInputChange = (field: keyof ApiConfiguration) => (event: any) => {
+		setApiConfiguration({ ...apiConfiguration, [field]: event.target.value })
+	}
 
 	// Poll ollama/lmstudio models
 	const requestLocalModels = useCallback(() => {
@@ -133,6 +146,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage }: 
 					<VSCodeOption value="bedrock">AWS Bedrock</VSCodeOption>
 					<VSCodeOption value="openai-native">OpenAI</VSCodeOption>
 					<VSCodeOption value="openai">OpenAI Compatible</VSCodeOption>
+					<VSCodeOption value="cerebras">Cerebras</VSCodeOption>
 					<VSCodeOption value="lmstudio">LM Studio</VSCodeOption>
 					<VSCodeOption value="ollama">Ollama</VSCodeOption>
 				</VSCodeDropdown>
@@ -213,6 +227,43 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage }: 
 								You can get an OpenAI API key by signing up here.
 							</VSCodeLink>
 						)}
+					</p>
+				</div>
+			)}
+
+{selectedProvider === "cerebras" && (
+				<div>
+					<VSCodeTextField
+						value={apiConfiguration?.cerebrasApiKey || ""}
+						style={{ width: "100%" }}
+						type="password"
+						onInput={handleInputChange("cerebrasApiKey")}
+						placeholder="Enter API Key...">
+						<span style={{ fontWeight: 500 }}>Cerebras API Key</span>
+					</VSCodeTextField>
+					<p
+						style={{
+							fontSize: "12px",
+							marginTop: 3,
+							color: "var(--vscode-descriptionForeground)",
+						}}>
+						This key is stored locally and only used to make API requests from this extension.
+						{!apiConfiguration?.cerebrasApiKey && (
+							<VSCodeLink
+								href="https://inference-docs.cerebras.ai/introduction"
+								style={{ display: "inline", fontSize: "inherit" }}>
+								You can get a Cerebras API key by signing up here.
+							</VSCodeLink>
+						)}
+					</p>
+					<p
+						style={{
+							fontSize: "12px",
+							marginTop: 3,
+							color: "var(--vscode-errorForeground)",
+						}}>
+						(<span style={{ fontWeight: 500 }}>Note:</span> Cline uses complex prompts and works best
+						with Claude models. Less capable models may not work as expected.)
 					</p>
 				</div>
 			)}
@@ -639,6 +690,27 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage }: 
 							{selectedProvider === "vertex" && createDropdown(vertexModels)}
 							{selectedProvider === "gemini" && createDropdown(geminiModels)}
 							{selectedProvider === "openai-native" && createDropdown(openAiNativeModels)}
+							{selectedProvider === "cerebras" && (
+				<VSCodeDropdown
+					id="model-id"
+					value={selectedModelId}
+					onChange={handleInputChange("cerebrasModelId")}
+					style={{ width: "100%" }}>
+					<VSCodeOption value="">Select a model...</VSCodeOption>
+					{Object.keys(cerebrasModels).map((modelId) => (
+						<VSCodeOption
+							key={modelId}
+							value={modelId}
+							style={{
+								whiteSpace: "normal",
+								wordWrap: "break-word",
+								maxWidth: "100%",
+							}}>
+							{modelId}
+						</VSCodeOption>
+					))}
+				</VSCodeDropdown>
+			)}
 						</div>
 
 						<ModelInfoView
@@ -848,6 +920,13 @@ export function normalizeApiConfiguration(apiConfiguration?: ApiConfiguration) {
 				selectedProvider: provider,
 				selectedModelId: apiConfiguration?.lmStudioModelId || "",
 				selectedModelInfo: openAiModelInfoSaneDefaults,
+			}
+		case "cerebras":
+			const cerebrasModelId = (apiConfiguration?.cerebrasModelId || cerebrasDefaultModelId) as CerebrasModelId;
+			return {
+				selectedProvider: provider,
+				selectedModelId: cerebrasModelId,
+				selectedModelInfo: cerebrasModels[cerebrasModelId],
 			}
 		default:
 			return getProviderData(anthropicModels, anthropicDefaultModelId)
